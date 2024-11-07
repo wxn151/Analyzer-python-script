@@ -67,7 +67,7 @@ class Rutine():
                 intent += 1
                 pass
         
-    #able to windows
+    #able to linux
     def easter_egg(self):
         self.animate_text(self._conttribution)
         
@@ -99,8 +99,9 @@ class Rutine():
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠑⠢⡎⠀⣴⡇⢀⣼⡂⠈⢣⠀⠀⠀⠀⠀⠀⠀
     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⡦⠴⠋⠉⠉⠀⠈⠓⠊⠀⠀⠀⠀⠀⠀⠀''')
                 break;
-                # break;
+                
             time.sleep(0.3)
-            os.system('cls')  
+            os.system('clear')
+            #os.system('cls')  
   
 
