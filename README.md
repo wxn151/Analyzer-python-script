@@ -1,5 +1,5 @@
 # 🧪 Python SOLID Analyzer
-
+--
 This script reads a Python source file (.py) and checks for basic violations of the SOLID principles.
 
 ## 📦 HOW TO USE IT
@@ -22,9 +22,7 @@ python main.py dummy.py
     SRP (Single Responsibility Principle): classes with too many methods.
 
 
-# 🧪 Analizador SOLID en Python
 
-Este script lee un archivo fuente de Python (.py) y verifica si respeta los principios SOLID de forma básica.
 ## 📦 ¿CÓMO USARLO?
 
 Coloca el archivo que deseas analizar en la misma carpeta, y ejecuta desde la terminal:
