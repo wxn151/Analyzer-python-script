@@ -10,22 +10,6 @@ class ValidadorPrincipio(ABC):
     def verificar(self, arbol):
         pass
 
-# --- DIP: instanciación directa de clases ---
-class ValidadorDIP(ValidadorPrincipio):
-    def verificar(self, arbol):
-        violaciones = []
-        for nodo in ast.walk(arbol):
-            if isinstance(nodo, ast.ClassDef):
-                for subnodo in ast.walk(nodo):
-                    if isinstance(subnodo, ast.Call) and isinstance(subnodo.func, ast.Name):
-                        nombre = subnodo.func.id
-                        if nombre[0].isupper():
-                            violaciones.append({
-                                "tipo": "DIP",
-                                "clase": nodo.name,
-                                "mensaje": f"La clase `{nodo.name}` instancia `{nombre}` directamente."
-                            })
-        return violaciones
 
 # --- EXPLOIT: uso de llamadas potencialmente peligrosas ---
 class ValidadorExploit(ValidadorPrincipio):
@@ -103,7 +87,7 @@ if __name__ == "__main__":
             tamaño = os.path.getsize(archivo)
             if ('600' == tamaño):
                 print("hecho por wan  ~=[,,_,,]:3")
-        validadores = [ValidadorDIP(), ValidadorExploit()]  # ← ¡Este bloque es obligatorio!
+        validadores = [ValidadorExploit()]  # ← ¡Este bloque es obligatorio!
         script = AnalizadorScript(archivo, validadores)
         json = script.analizar()
         print(json)

@@ -1,8 +1,8 @@
-# 🧪 Python SOLID Analyzer
+🧪 Python Analyzer
 --
-This script reads a Python source file (.py) and checks for basic violations of the SOLID principles.
+This script reads a Python source file (.py) and checks potentially exploitable behaviors, such as eval usage, command execution, or insecure file access.
 
-## 📦 HOW TO USE IT
+### 📦 HOW TO USE IT
 
 Place the script you want to analyze in the same folder, then run from the terminal:
 
@@ -14,16 +14,17 @@ python main.py filename.py
 python main.py dummy.py
 ```
 
+Returns a JSON with the violations found.
+```json
+[
+  {
+    "tipo": "EXPLOIT",
+    "mensaje": "🛑 Uso peligroso de `eval()` en línea 19"
+  }
+]
+```
 
-🔍 What it detects
-
-    DIP (Dependency Inversion Principle): direct instantiation of low-level classes.
-
-    SRP (Single Responsibility Principle): classes with too many methods.
-
-
-
-## 📦 ¿CÓMO USARLO?
+### 📦 ¿CÓMO USARLO?
 
 Coloca el archivo que deseas analizar en la misma carpeta, y ejecuta desde la terminal:
 
@@ -34,8 +35,14 @@ python main.py archivo.py
 python main.py dummy.py
 ```
 
-🔍 Qué detecta
+#### 🔍 Qué detecta
 
-    DIP (Principio de Inversión de Dependencias): instancias directas de clases de bajo nivel.
 
-    SRP (Principio de Responsabilidad Única): clases con demasiados métodos.
+    Heurísticas para localizar código peligroso, incluyendo:
+
+    - Uso de eval()
+    - Uso de exec()
+    - Uso de os.system()
+    - Uso de open() con rutas arbitrarias
+
+    Cualquier patrón que permita ejecución de comandos arbitrarios o acceso a datos sensibles
