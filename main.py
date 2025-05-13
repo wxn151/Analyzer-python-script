@@ -1,68 +1,109 @@
 import ast
 import os
 import sys
+import json
+from abc import ABC, abstractmethod
 
-class AnalizadorSolid:
-    def __init__(self, nombre_archivo):
-        self.nombre_archivo = nombre_archivo
-        with open(nombre_archivo, "r", encoding="utf-8") as f:
-            self.arbol = ast.parse(f.read())
-        self.violaciones = []
+# --- Interfaz base para validadores ---
+class ValidadorPrincipio(ABC):
+    @abstractmethod
+    def verificar(self, arbol):
+        pass
 
-    def analizar(self):
-        print(f"\nAnálisis SOLID para `{os.path.basename(self.nombre_archivo)}`")
-        print("-" * 40)
-        self._verificar_responsabilidad_unica()
-        self._verificar_inversion_dependencias()
-        self._imprimir_resultados()
-
-    def _verificar_responsabilidad_unica(self):
-        """
-        Detecta si una clase tiene demasiados métodos (violación del SRP).
-        """
-        for nodo in ast.walk(self.arbol):
-            if isinstance(nodo, ast.ClassDef):
-                cantidad_metodos = sum(isinstance(n, ast.FunctionDef) for n in nodo.body)
-                if cantidad_metodos > 5:  # umbral arbitrario
-                    self.violaciones.append({
-                        "tipo": "SRP",
-                        "mensaje": f"⚠️ La clase `{nodo.name}` tiene {cantidad_metodos} métodos. Considera dividirla."
-                    })
-
-    def _verificar_inversion_dependencias(self):
-        """
-        Detecta si las clases de alto nivel crean instancias de dependencias de bajo nivel directamente (violación del DIP).
-        """
-        for nodo in ast.walk(self.arbol):
+# --- DIP: instanciación directa de clases ---
+class ValidadorDIP(ValidadorPrincipio):
+    def verificar(self, arbol):
+        violaciones = []
+        for nodo in ast.walk(arbol):
             if isinstance(nodo, ast.ClassDef):
                 for subnodo in ast.walk(nodo):
                     if isinstance(subnodo, ast.Call) and isinstance(subnodo.func, ast.Name):
-                        nombre_clase = subnodo.func.id
-                        if nombre_clase[0].isupper():
-                            self.violaciones.append({
+                        nombre = subnodo.func.id
+                        if nombre[0].isupper():
+                            violaciones.append({
                                 "tipo": "DIP",
-                                "mensaje": f"⚠️ La clase `{nodo.name}` crea una instancia de `{nombre_clase}` directamente. Usa una abstracción o inyección en su lugar."
+                                "clase": nodo.name,
+                                "mensaje": f"La clase `{nodo.name}` instancia `{nombre}` directamente."
                             })
+        return violaciones
 
-    def _imprimir_resultados(self):
-        if not self.violaciones:
-            print("Todos los principios SOLID parecen respetarse.")
-        else:
-            tipos = {v["tipo"] for v in self.violaciones}
-            for t in ["SRP", "DIP"]:
-                grupo = [v for v in self.violaciones if v["tipo"] == t]
-                for v in grupo:
-                    print(v["mensaje"])
+# --- EXPLOIT: uso de llamadas potencialmente peligrosas ---
+class ValidadorExploit(ValidadorPrincipio):
+    peligrosos = {"eval", "exec", "os.system", "subprocess", "pickle.loads"}
 
+    def verificar(self, arbol):
+        violaciones = []
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.Call):
+                llamada = self._obtener_nombre_llamada(nodo.func)
+                if llamada and any(p in llamada for p in self.peligrosos):
+                    violaciones.append({
+                        "tipo": "EXPLOIT",
+                        "llamada": llamada,
+                        "mensaje": f"⚠️ Posible uso inseguro de `{llamada}`."
+                    })
+        return violaciones
+
+    def _obtener_nombre_llamada(self, func):
+        if isinstance(func, ast.Name):
+            return func.id
+        elif isinstance(func, ast.Attribute):
+            return f"{self._obtener_nombre_llamada(func.value)}.{func.attr}"
+        return None
+
+# --- Analizador principal ---
+class AnalizadorScript:
+    def __init__(self, archivo, validadores):
+        self.archivo = archivo
+        self.validadores = validadores
+        self.violaciones = []
+
+    def analizar(self):
+        try:
+            with open(self.archivo, "r", encoding="utf-8") as f:
+                arbol = ast.parse(f.read())
+        except FileNotFoundError:
+            return self._respuesta_error("Archivo no encontrado.")
+        except SyntaxError as e:
+            return self._respuesta_error(f"Error de sintaxis: {e}")
+        except Exception as e:
+            return self._respuesta_error(f"Error inesperado: {e}")
+
+        for validador in self.validadores:
+            try:
+                self.violaciones.extend(validador.verificar(arbol))
+            except Exception as e:
+                self.violaciones.append({
+                    "tipo": "ERROR",
+                    "validador": validador.__class__.__name__,
+                    "mensaje": str(e)
+                })
+
+        return self._respuesta_exitosa()
+
+    def _respuesta_error(self, mensaje):
+        return json.dumps({
+            "archivo": os.path.basename(self.archivo),
+            "error": mensaje
+        }, indent=2, ensure_ascii=False)
+
+    def _respuesta_exitosa(self):
+        return json.dumps({
+            "archivo": os.path.basename(self.archivo),
+            "violaciones": self.violaciones or [{"tipo": "OK", "mensaje": "Sin violaciones encontradas."}]
+        }, indent=2, ensure_ascii=False)
+
+# --- Ejecutable ---
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("❌ Uso: python main.py <archivo.py>")
+        print(json.dumps({"error": "Uso: python main.py <archivo.py>"}, indent=2))
     else:
         archivo = sys.argv[1]
         if os.path.exists(archivo):
             tamaño = os.path.getsize(archivo)
             if ('600' == tamaño):
                 print("hecho por wan  ~=[,,_,,]:3")
-            AnalizadorSolid(archivo).analizar()
-        else:
-            print(f"El archivo '{archivo}' no existe.")
+        validadores = [ValidadorDIP(), ValidadorExploit()]  # ← ¡Este bloque es obligatorio!
+        script = AnalizadorScript(archivo, validadores)
+        json = script.analizar()
+        print(json)
